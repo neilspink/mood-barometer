@@ -6,6 +6,8 @@ This project implements an analog display that gets its data from an [MQTT broke
 
 ![Mood Barometer Back](picture-back.jpg)
 
+![Mood Barometer Back](picture-back-cover.jpg)
+
 Download link for construction of the housing in Fusion 360
 
 http://a360.co/2nmHa7m
