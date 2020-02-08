@@ -21,3 +21,13 @@ The idea and housing came from a [blog post](https://www.bastelgarage.ch/index.p
 * NodeMCU-32S ESP32 WiFi Bluetooth development board
 * Stepper motor 28BYJ-28 with a ULN2003 driver board
 * 6x10mm neodymium bar magnet
+
+## Clock Face
+
+The smileys I got from https://openmoji.org/
+
+I created it using the [GIMP](https://www.gimp.org/), the XCF file is included in the repository.
+
+![Mood Dial](dial.png)
+
+
