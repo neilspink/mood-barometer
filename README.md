@@ -30,4 +30,19 @@ I created it using the [GIMP](https://www.gimp.org/), the XCF file is included i
 
 ![Mood Dial](dial.png)
 
+## MQTT
+
+The MQTT broker is configured to require client authentication using a valid username and password before a connection is permitted.
+
+Run each command in a different terminal to monitor topics:
+> mosquitto_sub -h localhost -t team1/moodometer -u "sammy" -P "1234"
+> mosquitto_sub -h localhost -t team1/mood -u "sammy" -P "1234"
+
+Send command to barometer to change mood (-m is message we are sending an int between 1 and 5):
+> mosquitto_pub -h localhost -t team1/mood -m "1" -u "sammy" -P "1234" 
+
+
+
+
+
 

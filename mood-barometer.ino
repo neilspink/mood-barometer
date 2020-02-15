@@ -1,21 +1,34 @@
 
-#include <Stepper.h>
+#include <Stepper.h>        //by Arduino
+#include <PubSubClient.h>   //by Nick O'Leary
+#include <WiFi.h>           //by Arduino
 
+//MQTT 
+const char* mqttPublishTopic = "team1/moodometer";
+const char* mqttSubscribeTopic = "team1/mood";
+const char* mqttServer = "192.168.1.13";
+const int mqttPort = 1883;
+const char* mqttClientId = "team1";
+const char* mqttUser = "sammy";
+const char* mqttPassword = "1234";
+
+long millisLastMsg = 0; 
+const int reconnectEveryMillis = 5000;
 
 //WiFi 
 const char* ssid = "";              
 const char* password =  ""; 
-const char* mqttServer = "192.168.1.13";
-const int mqttPort = 1883;
-const char* mqttUser = "sammy";
-const char* mqttPassword = "1234";
 
-//1= Super Happy
-//2= Happy
-//3= OK
-//4= Not Happy
-//5= Angry
-// The angles are {144, 72, 0, 216, 288}; 
+
+WiFiClient espClient;
+PubSubClient client(espClient);
+
+//Baramoter dial angles are {144, 72, 0, 216, 288}; 
+// 1 = Super Happy
+// 2 = Happy
+// 3 = OK
+// 4 = Not Happy
+// 5 = Angry
 
 int route[20][3] 
   {
@@ -71,10 +84,12 @@ void setup() {
   stepper.setSpeed(MOTOR_SPEED);
   Calibrate();
 
-  randomSeed(hallRead());
+  setup_wifi();
+  client.setServer(mqttServer, mqttPort);
+  client.setCallback(callback);
+  
   Serial.println("setup complete");
 }
-
 
 void loop() {
   if (Serial.available() > 0)
@@ -94,9 +109,24 @@ void loop() {
     Serial.println("Mood "+(String)targetPos); 
     SetPos();  
   }
-  
-}
 
+  long now = millis();
+  if (now - millisLastMsg >= reconnectEveryMillis) {
+    millisLastMsg = now;
+    
+    if (!client.connected()) {
+      reconnect();
+    }
+    client.loop();
+
+    String currentMood = "Current Mood "+(String)currentPos;
+    char charBuf[7];
+    currentMood.toCharArray(charBuf, 7);
+
+    Serial.println(currentMood); 
+    client.publish(mqttPublishTopic, charBuf);
+  }
+}
 
 boolean OnHallSensor()
 {
@@ -104,7 +134,6 @@ boolean OnHallSensor()
   //Serial.println(val);
   return (val > DETECT_HALL);
 }
-
 
 void Calibrate()
 {
@@ -132,7 +161,6 @@ void Calibrate()
 
   StepperOff();
 }
-
 
 void SetPos()
 {
@@ -170,7 +198,6 @@ void SetPos()
   }
 }
 
-
 void StepperOff()
 {
   delay(100);     //wait incase motor is still moving
@@ -182,7 +209,6 @@ void StepperOff()
   digitalWrite(motorPin4, LOW);
 }
 
-
 void StepperOn()
 {
   digitalWrite(motorPin1, IN1); //return positional setting
@@ -192,11 +218,67 @@ void StepperOn()
   delay(100);
 }
 
-
 void StepperSave()
 {
   IN1 = digitalRead(motorPin1); 
   IN2 = digitalRead(motorPin2);
   IN3 = digitalRead(motorPin3);
   IN4 = digitalRead(motorPin4);
+}
+
+void setup_wifi() {
+  delay(10);
+ 
+  Serial.println();
+  Serial.print("Connecting to ");
+  Serial.println(ssid);
+
+  WiFi.begin(ssid, password);
+
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(".");
+  }
+
+  Serial.println("");
+  Serial.println("WiFi connected");
+  Serial.println("IP address: ");
+  Serial.println(WiFi.localIP());
+}
+
+void callback(char* topic, byte* message, unsigned int length) {
+  
+  Serial.print("Message arrived on topic: ");
+  Serial.print(topic);
+  Serial.print(". Message: ");
+  String messageTemp;
+  
+  for (int i = 0; i < length; i++) {
+    messageTemp += (char)message[i];
+  }
+  Serial.print(messageTemp);
+  Serial.println();
+
+  targetPos = messageTemp.toInt(); 
+}
+
+void reconnect() {
+  
+  // Loop until we're reconnected
+  while (!client.connected()) {
+    
+    Serial.print("Attempting MQTT connection...");
+
+    if (client.connect(mqttClientId, mqttUser, mqttPassword)) {
+      Serial.println("connected");
+      Serial.println("publishing mood to topic " + (String)mqttPublishTopic);
+      Serial.println("subscribing to topic " + (String)mqttSubscribeTopic);
+      client.subscribe(mqttSubscribeTopic);
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");      
+      delay(5000);  // Wait before retrying
+    }
+  }
 }
