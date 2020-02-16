@@ -244,7 +244,6 @@ void Callback(char* topic, byte* message, unsigned int length) {
     int mood = atoi(reinterpret_cast<char *>(message));  // if non integer number a zero is returned
 
     if (mood == 0) {
-      // Serial.print(" (message = " + (String)(char)message[0] + ")");
       Serial.print(" (message = " + (String)static_cast<char>(message[0]) + ")");
     }
 
