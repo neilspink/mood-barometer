@@ -22,7 +22,7 @@ const char* password =  "";
 PubSubClient client(espClient);
 const char* mqttPublishTopic = "team1/moodometer";
 const char* mqttSubscribeTopic = "team1/mood";
-const char* mqttServer = "192.168.1.13";
+const char* mqttServer = "broker.tec2020.fun";
 const unsigned int mqttPort = 1883;
 const char* mqttClientId = "team1";
 const char* mqttUser = "sammy";
