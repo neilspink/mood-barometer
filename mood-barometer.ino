@@ -176,7 +176,7 @@ void SetPos(const unsigned int target) {
     int i, endPos;
     for (i = 0; i < 20; i++) {
       if (route[i][0] == currentPos && route[i][1] == target) {
-        Serial.println("Should more " + (String)route[i][2] + "'");
+        Serial.println("Moving angle of " + (String)route[i][2] + "'");
         endPos = map(route[i][2], 0, 360, 0, MOTOR_STEPS);
         break;
       }
