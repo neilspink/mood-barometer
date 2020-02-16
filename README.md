@@ -32,11 +32,35 @@ I created it using the [GIMP](https://www.gimp.org/), the XCF file is included i
 
 ## MQTT
 
-The MQTT broker is configured to require client authentication using a valid username and password before a connection is permitted.
+### Install Mosquitto
+
+> sudo apt-get install mosquitto mosquitto-clients
+
+By default, Ubuntu will start the Mosquitto service after install.
+
+### Configuring MQTT Passwords
+
+Generate the password file using the utility mosquitto_passwd.
+> sudo mosquitto_passwd -c /etc/mosquitto/passwd sammy
+
+The password file needs to be added to the configuration
+> sudo nano /etc/mosquitto/conf.d/default.conf
+
+Add following to the end of the file
+> password_file /etc/mosquitto/passwd
+
+Now the MQTT broker is configured to require client authentication using a valid username and password before a connection is permitted. A restart of the service is required.
+> sudo systemctl restart mosquitto
+
+_Important_: An extra layer of security can be adding SSL, see [MQTT FAQ](http://mqtt.org/faq) for an opinion.
+
+### Subscribing for messages
 
 Run each command in a different terminal to monitor topics:
 > mosquitto_sub -h localhost -t team1/moodometer -u "sammy" -P "1234"  
 > mosquitto_sub -h localhost -t team1/mood -u "sammy" -P "1234" 
+
+### Publishing messages
 
 Send command to barometer to change mood (-m is message we are sending an int between 1 and 5):
 > mosquitto_pub -h localhost -t team1/mood -m "1" -u "sammy" -P "1234" 
