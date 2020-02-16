@@ -23,11 +23,11 @@ PubSubClient client(espClient);
 const char* mqttPublishTopic = "team1/moodometer";
 const char* mqttSubscribeTopic = "team1/mood";
 const char* mqttServer = "192.168.1.13";
-const int mqttPort = 1883;
+const unsigned int mqttPort = 1883;
 const char* mqttClientId = "team1";
 const char* mqttUser = "sammy";
 const char* mqttPassword = "1234";
-const int ReconnectEveryMillis = 5000;
+const unsigned int ReconnectEveryMillis = 5000;
 unsigned long timeLastMsg = 0;
 
 // The fastest hand/arm movements are precalculated in the route vector {start pos, target pos, angle to move}
@@ -54,13 +54,13 @@ int route[20][3] {
     {5,4,72}
   };
 
-const int DETECT_HALL = 18;     // sensor value indicating hand/arm is at 0°
-const int MOTOR_SPEED = 8;
-const int MOTOR_STEPS = 2038;   // how many steps for one revolution 360°
-const int RECALIB_EVERY = 10;   // deal with drift
+const unsigned int DETECT_HALL = 18;     // sensor value indicating hand/arm is at 0°
+const unsigned int MOTOR_SPEED = 8;
+const unsigned int MOTOR_STEPS = 2038;   // how many steps for one revolution 360°
+const unsigned int RECALIB_EVERY = 10;   // deal with drift
 
-int currentPos = 0;
-int moves = 0;                  // track how many times hand/arm moved for recalibration
+unsigned int currentPos = 0;
+unsigned int moves = 0;                  // track how many times hand/arm moved for recalibration
 
 // Power save position
 unsigned char IN1 = 0;
@@ -68,10 +68,10 @@ unsigned char IN2 = 0;
 unsigned char IN3 = 0;
 unsigned char IN4 = 0;
 
-const int motorPin1 = 12;
-const int motorPin2 = 27;
-const int motorPin3 = 14;
-const int motorPin4 = 26;
+const unsigned int motorPin1 = 12;
+const unsigned int motorPin2 = 27;
+const unsigned int motorPin3 = 14;
+const unsigned int motorPin4 = 26;
 
 Stepper stepper(MOTOR_STEPS, motorPin1, motorPin2, motorPin3, motorPin4);
 
