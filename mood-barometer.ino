@@ -20,11 +20,11 @@ const char* password =  "";
 
 // MQTT
 PubSubClient client(espClient);
-const char* mqttPublishTopic = "team1/moodometer";
-const char* mqttSubscribeTopic = "team1/mood";
+const char* mqttPublishTopic = "test/moodometer";
+const char* mqttSubscribeTopic = "test/mood";
 const char* mqttServer = "broker.tec2020.fun";
 const unsigned int mqttPort = 1883;
-const char* mqttClientId = "team1";
+const char* mqttClientId = "test";
 const char* mqttUser = "sammy";
 const char* mqttPassword = "1234";
 const unsigned int ReconnectEveryMillis = 5000;
