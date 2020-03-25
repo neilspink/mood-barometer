@@ -65,7 +65,7 @@ Run each command in a different terminal to monitor topics:
 Send command to barometer to change mood (-m is message we are sending an int between 1 and 5):
 > mosquitto_pub -h localhost -t team1/mood -m "1" -u "sammy" -P "1234" 
 
-
+.
 
 
 
