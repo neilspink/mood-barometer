@@ -10,24 +10,16 @@
 */
 
 #include <Stepper.h>        // by Arduino
-#include <PubSubClient.h>   // by Nick O'Leary
 #include <WiFi.h>           // by Arduino
+#include <HTTPClient.h>
 
 // WiFi
-WiFiClient espClient;
-const char* ssid = "";
-const char* password =  "";
+const char* ssid = "Moody";
+const char* password =  "firstclass";
 
-// MQTT
-PubSubClient client(espClient);
-const char* mqttPublishTopic = "test/moodometer";
-const char* mqttSubscribeTopic = "test/mood";
-const char* mqttServer = "broker.tec2020.fun";
-const unsigned int mqttPort = 1883;
-const char* mqttClientId = "test";
-const char* mqttUser = "sammy";
-const char* mqttPassword = "1234";
-const unsigned int ReconnectEveryMillis = 5000;
+const char* serverNameMood = "http://192.168.4.1/mood";
+
+const unsigned int ReconnectEveryMillis = 1000;
 unsigned long timeLastMsg = 0;
 
 // The fastest hand/arm movements are precalculated in the route vector {start pos, target pos, angle to move}
@@ -54,10 +46,12 @@ int route[20][3] {
     {5,4,72}
   };
 
-const unsigned int DETECT_HALL = 18;     // sensor value indicating hand/arm is at 0°
-const unsigned int MOTOR_SPEED = 8;
+const unsigned int MOTOR_SPEED = 6;
 const unsigned int MOTOR_STEPS = 2038;   // how many steps for one revolution 360°
 const unsigned int RECALIB_EVERY = 10;   // deal with drift
+
+const int hallSensorPin = 17;
+int onHall = 0;
 
 unsigned int currentPos = 0;
 unsigned int moves = 0;                  // track how many times hand/arm moved for recalibration
@@ -79,17 +73,20 @@ void setup() {
   Serial.begin(115200);
   Serial.println("setup starting");
 
+  pinMode(hallSensorPin, INPUT); 
+  
+  Serial.println("Wifi");
+  SetupWifi();
+
+  Serial.println("Calibration");
   stepper.setSpeed(MOTOR_SPEED);
   Calibrate();
-
-  SetupWifi();
-  client.setServer(mqttServer, mqttPort);
-  client.setCallback(Callback);
 
   Serial.println("setup complete");
 }
 
 void loop() {
+  
   if (Serial.available() > 0) {
     SerialCommand();
   }
@@ -98,36 +95,33 @@ void loop() {
   if (now - timeLastMsg >= ReconnectEveryMillis) {
     timeLastMsg = now;
 
-    if (!client.connected()) {
-      Reconnect();
+    Serial.println("Checking WiFi.status");  
+    if(WiFi.status()== WL_CONNECTED ){ 
+      Serial.println("Checking webservice");
+      String mood = httpGETRequest(serverNameMood);
+      Serial.println("The mood is "+(String)mood);
+      unsigned int m = strtoul(mood.c_str(), NULL, 10);
+      SetPos(m);
+    } else {
+      Serial.println("NO WiFi :("); 
     }
-    client.loop();
-
-    PublishCurrentMood();
   }
 }
 
 void SerialCommand() {
   int command = Serial.parseInt();
 
-  if (command > 0 && command < 6) {
+  if (command == 8) {
+    Calibrate();
+  } else if (command > 0 && command < 6) {
     Serial.println("Serial command to set mood to "+(String)command);
     SetPos(command);
   }
 }
 
-void PublishCurrentMood() {
-  String currentMood = "Current Mood "+(String)currentPos;
-  char charBuf[15];
-  currentMood.toCharArray(charBuf, 15);
-
-  Serial.println(currentMood);
-  client.publish(mqttPublishTopic, charBuf);
-}
-
 boolean OnHallSensor() {
-  int val = abs(hallRead());
-  return (val > DETECT_HALL);
+  onHall = digitalRead(hallSensorPin);
+  return (onHall == LOW);
 }
 
 void Calibrate() {
@@ -176,7 +170,7 @@ void SetPos(const unsigned int target) {
     int i, endPos;
     for (i = 0; i < 20; i++) {
       if (route[i][0] == currentPos && route[i][1] == target) {
-        Serial.println("Moving angle of " + (String)route[i][2] + "'");
+        Serial.println("currentPos " + (String)currentPos + " target " + (String)target + " and moving angle of " + (String)route[i][2] + "'");
         endPos = map(route[i][2], 0, 360, 0, MOTOR_STEPS);
         break;
       }
@@ -217,65 +211,47 @@ void StepperSave() {
 }
 
 void SetupWifi() {
-  delay(10);
+  delay(100);
 
   Serial.println();
   Serial.print("Connecting to ");
   Serial.println(ssid);
 
   WiFi.begin(ssid, password);
-
-  while (WiFi.status() != WL_CONNECTED) {
+  Serial.println("Connecting");
+  while(WiFi.status() != WL_CONNECTED) { 
     delay(500);
     Serial.print(".");
   }
-
   Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.println("IP address: ");
+  Serial.print("Connected to WiFi network with IP Address: ");
   Serial.println(WiFi.localIP());
 }
 
-void Callback(char* topic, byte* message, unsigned int length) {
-  Serial.print("Message of " + (String)length + " chars arrived on topic: ");
-  Serial.print(topic);
 
-  if (length == 1) {
-    int mood = atoi(reinterpret_cast<char *>(message));  // if non integer number a zero is returned
-
-    if (mood == 0) {
-      Serial.print(" (message = " + (String)static_cast<char>(message[0]) + ")");
-    }
-
-    Serial.print(". Set mood to " + (String)mood);
-    Serial.println();
-    SetPos(mood);
-  } else {
-    Serial.print(". Invalid message: ");
-    String messageTemp;
-
-    for (int i = 0; i < length; i++) {
-      messageTemp += static_cast<char>(message[i]);
-    }
-    Serial.print(messageTemp);
-    Serial.println();
+String httpGETRequest(const char* serverName) {
+  WiFiClient client;
+  HTTPClient http;
+    
+  // Your Domain name with URL path or IP address with path
+  http.begin(client, serverName);
+  
+  // Send HTTP POST request
+  int httpResponseCode = http.GET();
+  
+  String payload = "--"; 
+  
+  if (httpResponseCode>0) {
+    Serial.print("HTTP Response code: ");
+    Serial.println(httpResponseCode);
+    payload = http.getString();
   }
-}
-
-void Reconnect() {
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-
-    if (client.connect(mqttClientId, mqttUser, mqttPassword)) {
-      Serial.println("connected");
-      Serial.println("publishing mood to topic " + (String)mqttPublishTopic);
-      Serial.println("subscribing to topic " + (String)mqttSubscribeTopic);
-      client.subscribe(mqttSubscribeTopic);
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);  // Wait before retrying
-    }
+  else {
+    Serial.print("Error code: ");
+    Serial.println(httpResponseCode);
   }
+  // Free resources
+  http.end();
+
+  return payload;
 }
